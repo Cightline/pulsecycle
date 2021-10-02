@@ -1,5 +1,5 @@
 # pulsecycle
-A tool written in Rust to switch your audio outputs on Linux. This is a rewrite of [switch_stream](https://github.com/Cightline/switch_stream) in Rust. This was hastily written after getting tired of Python. 
+A tool to switch your pulseaudio outputs on Linux. This is a Rust rewrite of [switch_stream](https://github.com/Cightline/switch_stream). This was hastily written after getting tired of Python. 
 
 #### There are 3 main command line options right now. 
 
