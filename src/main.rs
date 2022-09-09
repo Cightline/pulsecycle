@@ -4,26 +4,52 @@ use std::io;
 use log::*;
 use std::ops::Index;
 use clap::{App, Arg};
+use pulsectl::ControllerError;
 
-fn cycle_sinks(handler: &mut SinkController)
+
+fn current_sink(handler: &mut SinkController, long_format: bool)
 {
-    let devices = handler
-        .list_devices()
-        .expect("Could not get list of playback devices");
+    let mut to_print = "N/A".to_string();
+
+    if let Ok(default_device) = handler.get_default_device()
+    {
+        if let Some(description) = default_device.description
+        {
+            if long_format
+            {
+                to_print = description;
+            }
+
+            else
+            {
+                if let Some(l) = description.split_whitespace().next()
+                {
+                    to_print = l.to_string()
+                }
+            }
+        }
+    };
+
+    println!("{}", to_print);
+}
+
+fn cycle_sinks(handler: &mut SinkController) -> Result<(), ()>
+{
+    let devices = match handler.list_devices()
+    {
+        Ok(devices) => { devices },
+        Err(e) => { return Err(()); }
+    };
+
+    if devices.len() == 1
+    {
+        return Ok(());
+    }
 
     //handler.set_default_device()
     let default_device = handler.get_default_device().unwrap();
     let current_index  = default_device.index as usize;
     let mut new_index = 0_usize;
-
-    if devices.len() == 1
-    {
-        return;
-    }
-
-    //new_index = current_index + 1;
-
-    println!("current_index: {}", current_index);
 
     if current_index + 1 < devices.len()
     {
@@ -32,21 +58,38 @@ fn cycle_sinks(handler: &mut SinkController)
     }
 
     println!("new_index: {}", new_index);
-    handler.set_default_device(&devices[new_index].clone().name.unwrap());
-    //handler.handler.introspect.set
 
-    let apps = handler.list_applications().unwrap();
 
-    for app in apps
+    match &devices[new_index].clone().name
     {
-        handler.move_app_by_index(app.index, new_index as u32);
+        None => { return Err(()); }
+        Some(name) =>
+        {
+            handler.set_default_device(name).ok();
+        }
     }
 
+    match handler.list_applications()
+    {
+        Ok(apps) =>
+        {
+            for app in apps
+            {
+                handler.move_app_by_index(app.index, new_index as u32).ok();
+            }
+        }
+
+        Err(e) =>
+        {
+            return Err(());
+        }
+    }
+
+    Ok(())
 }
 
-fn main() {
-    // create handler that calls functions on playback devices and apps
-
+fn main()
+{
     let mut handler = SinkController::create().unwrap();
 
     let matches = App::new("MyApp")
@@ -55,38 +98,21 @@ fn main() {
         .arg(Arg::with_name("current_sink_long").short("l"))
         .get_matches();
 
-
     if matches.is_present("current_sink_long")
     {
-        //println!("current_sink");
-
-        let mut to_print = "N/A".to_string();
-
-        if let Ok(default_device) = handler.get_default_device()
-        {
-            if let Some(description) = default_device.description
-            {
-                to_print = description;
-            }
-        };
-
-        println!("{}", to_print);
+        current_sink(&mut handler, true)
     }
 
-    if matches.is_present("current_sink")
+    else if matches.is_present("current_sink")
     {
-        //println!("current_sink");
-        let default_device = handler.get_default_device().unwrap();
-
-        println!("{}", default_device.description.unwrap().split_whitespace().next().unwrap_or("N/A"));
+        current_sink(&mut handler, true)
     }
 
     if matches.is_present("cycle")
     {
         println!("Cycling sinks...");
-        cycle_sinks(&mut handler)
+        cycle_sinks(&mut handler).ok();
     }
-
 
     /*println!("Playback Devices: ");
     for device in &devices
