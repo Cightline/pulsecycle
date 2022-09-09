@@ -7,7 +7,6 @@ use clap::{App, Arg};
 
 fn cycle_sinks(handler: &mut SinkController)
 {
-
     let devices = handler
         .list_devices()
         .expect("Could not get list of playback devices");
@@ -60,8 +59,18 @@ fn main() {
     if matches.is_present("current_sink_long")
     {
         //println!("current_sink");
-        let default_device = handler.get_default_device().unwrap();
-        println!("{}", default_device.description.unwrap());
+
+        let mut to_print = "N/A".to_string();
+
+        if let Ok(default_device) = handler.get_default_device()
+        {
+            if let Some(description) = default_device.description
+            {
+                to_print = description;
+            }
+        };
+
+        println!("{}", to_print);
     }
 
     if matches.is_present("current_sink")
@@ -77,12 +86,6 @@ fn main() {
         println!("Cycling sinks...");
         cycle_sinks(&mut handler)
     }
-
-
-
-
-
-
 
 
     /*println!("Playback Devices: ");
