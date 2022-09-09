@@ -105,7 +105,7 @@ fn main()
 
     else if matches.is_present("current_sink")
     {
-        current_sink(&mut handler, true)
+        current_sink(&mut handler, false)
     }
 
     if matches.is_present("cycle")
